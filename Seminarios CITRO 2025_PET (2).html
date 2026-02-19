@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>SIP · Dashboard Evaluación Académica 2025</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100%;font-family:"Segoe UI",Arial,sans-serif;font-size:14px}
+body{background:#0a2e1f;color:#f1f5f0;overflow-x:hidden}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-thumb{background:#22c55e;border-radius:3px}
+::-webkit-scrollbar-track{background:rgba(0,0,0,.2)}
+.glass{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:14px;backdrop-filter:blur(8px)}
+.glass-dark{background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.08);border-radius:10px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border:none;border-radius:8px;cursor:pointer;font-size:.85rem;font-weight:600;transition:all .18s;color:#a7f3d0;background:rgba(255,255,255,.08);border:1px solid rgba(167,243,208,.2)}
+.btn:hover{background:rgba(255,255,255,.15)}
+.btn-green{background:linear-gradient(135deg,#059669,#10b981);color:#fff;border:none}
+.btn-green:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(16,185,129,.4)}
+.tab{padding:8px 16px;border:none;border-radius:8px;cursor:pointer;font-size:.85rem;font-weight:600;transition:all .18s;background:transparent;color:#6ee7b7}
+.tab:hover{background:rgba(255,255,255,.08)}
+.tab.active{background:linear-gradient(135deg,#059669,#10b981);color:#fff;box-shadow:0 2px 10px rgba(16,185,129,.35)}
+.kpi{padding:18px 20px;border-radius:13px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);transition:transform .18s}
+.kpi:hover{transform:translateY(-2px)}
+.badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:.73rem;font-weight:700;white-space:nowrap}
+.pbar-wrap{margin-bottom:10px}
+.pbar-header{display:flex;justify-content:space-between;margin-bottom:3px;font-size:.79rem;color:#a7f3d0;flex-wrap:wrap;gap:4px}
+.pbar{height:6px;border-radius:3px;background:rgba(255,255,255,.1);overflow:hidden}
+.pbar-fill{height:100%;border-radius:3px;transition:width .9s ease}
+.pbar2{height:4px;border-radius:3px;background:rgba(255,255,255,.1);overflow:hidden;margin-top:3px}
+.pbar2-fill{height:100%;border-radius:3px;background:rgba(148,163,184,.4)}
+table{border-collapse:collapse;width:100%}
+th,td{padding:9px 13px;text-align:left;font-size:.82rem}
+th{background:rgba(5,150,105,.2);color:#6ee7b7;font-weight:700;position:sticky;top:0;z-index:2;white-space:nowrap;cursor:pointer;user-select:none}
+th:hover{background:rgba(5,150,105,.35)}
+tr:hover td{background:rgba(255,255,255,.04);cursor:pointer}
+td{border-bottom:1px solid rgba(255,255,255,.05)}
+.field{width:100%;padding:8px 13px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#f1f5f0;font-size:.88rem;outline:none}
+.field:focus{border-color:#10b981;box-shadow:0 0 0 3px rgba(16,185,129,.2)}
+.field option{background:#1a3d2e}
+.header{background:rgba(0,0,0,.45);backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,.08);padding:11px 26px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;gap:10px;flex-wrap:wrap}
+.tabs-bar{background:rgba(0,0,0,.2);border-bottom:1px solid rgba(255,255,255,.06);padding:9px 26px;display:flex;gap:6px;flex-wrap:wrap}
+.page{display:none;max-width:1200px;margin:0 auto;padding:22px 18px}
+.page.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.page.active{animation:fadeIn .35s ease}
+.grid-auto{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:12px;margin-bottom:24px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:20px}
+.detail-back{display:none}
+.filters{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.filters .field{flex:1;min-width:170px}
+.filters .field.sm{flex:0 0 auto;min-width:120px}
+.row-click{cursor:pointer}
+.comment-card{padding:18px 20px;margin-bottom:12px;border-left:4px solid #f59e0b}
+.prog-card{padding:18px;border-radius:13px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.06)}
+.prog-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px}
+.prog-stat{text-align:center;background:rgba(0,0,0,.2);border-radius:7px;padding:7px 3px}
+.prog-students{max-height:180px;overflow-y:auto}
+.prog-stu-row{display:flex;justify-content:space-between;align-items:center;padding:4px 6px;border-radius:5px;cursor:pointer;transition:background .15s}
+.prog-stu-row:hover{background:rgba(255,255,255,.07)}
+#detail-view{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#0a2e1f;overflow-y:auto;z-index:100}
+#detail-view.show{display:block}
+.detail-header{background:rgba(0,0,0,.5);backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,.08);padding:12px 24px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:10;flex-wrap:wrap}
+.detail-content{max-width:1100px;margin:0 auto;padding:22px 16px}
+.chart-box{position:relative;height:230px}
+.chart-box-tall{position:relative;height:280px}
+@media(max-width:680px){.grid2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<!-- ═══ DETALLE ESTUDIANTE ═══ -->
+<div id="detail-view">
+  <div class="detail-header">
+    <button class="btn" onclick="closeDetail()">← Volver</button>
+    <div>
+      <div id="d-nombre" style="font-weight:800;font-size:1rem;color:#ecfdf5"></div>
+      <div id="d-sub" style="font-size:.72rem;color:#6ee7b7"></div>
+    </div>
+  </div>
+  <div class="detail-content">
+    <div class="grid-auto" id="d-kpis"></div>
+    <div class="glass-dark" style="padding:14px;margin-bottom:16px">
+      <div style="color:#6ee7b7;font-weight:700;font-size:.8rem;margin-bottom:5px">🔬 Proyecto</div>
+      <p id="d-proyecto" style="color:#d1fae5;font-size:.87rem;line-height:1.65"></p>
+    </div>
+    <div class="grid2" style="margin-bottom:16px">
+      <div class="glass" style="padding:18px">
+        <h4 style="color:#d1fae5;margin-bottom:12px;font-weight:700">Calificaciones por Sección</h4>
+        <div id="d-secciones"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="glass" style="padding:18px;flex:1">
+          <h4 style="color:#d1fae5;margin-bottom:8px;font-weight:700">Perfil Radial</h4>
+          <div class="chart-box"><canvas id="chart-radar"></canvas></div>
+        </div>
+        <div class="glass" style="padding:18px;flex:1">
+          <h4 style="color:#d1fae5;margin-bottom:8px;font-weight:700">vs Promedio Grupal</h4>
+          <div class="chart-box"><canvas id="chart-bars"></canvas></div>
+        </div>
+      </div>
+    </div>
+    <div id="d-comentarios"></div>
+  </div>
+</div>
+
+<!-- ═══ MAIN DASHBOARD ═══ -->
+<div id="main-view">
+  <div class="header">
+    <div style="display:flex;align-items:center;gap:12px">
+      <span style="font-size:1.55rem">🌿</span>
+      <div>
+        <div style="font-weight:800;font-size:1.02rem;color:#ecfdf5">SIP · Dashboard de Evaluación Académica</div>
+        <div style="font-size:.71rem;color:#6ee7b7">Sistema de Información de Posgrado · Evaluación 2025 · 39 estudiantes</div>
+      </div>
+    </div>
+    <button class="btn btn-green" onclick="exportCSV()">⬇ Exportar CSV</button>
+  </div>
+
+  <div class="tabs-bar">
+    <button class="tab active" onclick="showTab('resumen',this)">📊 Resumen</button>
+    <button class="tab" onclick="showTab('programa',this)">🏫 Por Programa</button>
+    <button class="tab" onclick="showTab('ranking',this)">🏆 Ranking</button>
+    <button class="tab" onclick="showTab('tabla',this)">📋 Tabla Completa</button>
+    <button class="tab" onclick="showTab('comentarios',this)">💬 Comentarios</button>
+  </div>
+
+  <!-- RESUMEN -->
+  <div id="page-resumen" class="page active">
+    <div class="grid-auto" id="kpis-globales"></div>
+    
+    <!-- NOTA DE USO -->
+    <div class="glass" style="padding:18px 22px;margin-bottom:20px;border-left:4px solid #f59e0b;background:rgba(251,191,36,.08)">
+      <div style="display:flex;align-items:flex-start;gap:10px">
+        <span style="font-size:1.3rem;flex-shrink:0">⚠️</span>
+        <div>
+          <div style="color:#fbbf24;font-weight:700;font-size:.88rem;margin-bottom:6px">Uso de la Información</div>
+          <p style="color:#fef3c7;font-size:.85rem;line-height:1.65">Este dashboard es una herramienta de gestión interna para la coordinación del posgrado. <strong>No debe utilizarse para sancionar el desempeño individual</strong>, sino para diseñar estrategias pedagógicas y talleres de redacción científica que atiendan los rezagos detectados.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- NOTAS METODOLÓGICAS -->
+    <div class="glass" style="padding:18px 22px;margin-bottom:22px;border-left:4px solid #06b6d4">
+      <h4 style="color:#06b6d4;font-weight:700;font-size:.92rem;margin-bottom:10px">📋 Notas Metodológicas</h4>
+      <ul style="color:#d1fae5;font-size:.84rem;line-height:1.75;padding-left:20px;margin:0">
+        <li style="margin-bottom:6px">Los promedios de las secciones utilizan una <strong>escala de 1 a 5</strong>.</li>
+        <li style="margin-bottom:6px">La variable <strong>Convivencia</strong> resulta de la pregunta: <em>"¿A tu criterio consideras que se respetaron las reglas de convivencia en el interrogatorio del estudiante?"</em> (escala de 1 a 10).</li>
+        <li style="margin-bottom:6px"><strong>Varianza en evaluadores:</strong> Existe una gran varianza en el número de evaluadores por estudiante (ver columna "n" en Ranking/Tabla), lo cual afecta el ranking. Los datos deben tomarse como <strong>demostrativos</strong>, no como medida absoluta de desempeño.</li>
+      </ul>
+    </div>
+
+    <div class="grid2">
+      <div class="glass" style="padding:20px">
+        <h4 style="color:#d1fae5;margin-bottom:14px;font-weight:700">📊 Distribución de Medias Generales</h4>
+        <div class="chart-box-tall"><canvas id="chart-dist"></canvas></div>
+      </div>
+      <div class="glass" style="padding:20px">
+        <h4 style="color:#d1fae5;margin-bottom:14px;font-weight:700">📋 Promedio Grupal por Sección</h4>
+        <div id="grupo-secciones"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROGRAMA -->
+  <div id="page-programa" class="page">
+    <div id="prog-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:14px;margin-bottom:20px"></div>
+    <div class="glass" style="padding:20px">
+      <h4 style="color:#d1fae5;margin-bottom:14px;font-weight:700">Comparativa de Medias por Programa</h4>
+      <div style="height:290px"><canvas id="chart-prog"></canvas></div>
+    </div>
+  </div>
+
+  <!-- RANKING -->
+  <div id="page-ranking" class="page">
+    <div class="filters">
+      <input class="field" placeholder="🔍 Buscar nombre, proyecto o comentario..." oninput="applyFilters()" id="f-search"/>
+      <select class="field sm" onchange="applyFilters()" id="f-prog"></select>
+      <select class="field sm" onchange="applyFilters()" id="f-tipo">
+        <option value="">Todos</option><option value="DET">DET</option><option value="MET">MET</option>
+      </select>
+    </div>
+    <div class="glass" style="overflow:hidden">
+      <div style="overflow-x:auto">
+        <table id="ranking-table">
+          <thead><tr>
+            <th onclick="sortBy('rank')">Clave ⇅</th>
+            <th onclick="sortBy('nombre')">Nombre ⇅</th>
+            <th>Programa</th>
+            <th>n</th>
+            <th onclick="sortBy('mediaGeneral')">M. General ⇅</th>
+            <th onclick="sortBy('mediaPonderada')">M. Pond. ⇅</th>
+            <th onclick="sortBy('convivencia')">Conviv. ⇅</th>
+            <th></th>
+          </tr></thead>
+          <tbody id="ranking-body"></tbody>
+        </table>
+      </div>
+      <div id="ranking-count" style="padding:9px 14px;color:#6ee7b7;font-size:.76rem;border-top:1px solid rgba(255,255,255,.06)"></div>
+    </div>
+  </div>
+
+  <!-- TABLA -->
+  <div id="page-tabla" class="page">
+    <div class="filters">
+      <input class="field" placeholder="🔍 Buscar..." oninput="applyFilters()" id="t-search"/>
+      <select class="field sm" onchange="applyFilters()" id="t-prog"></select>
+      <select class="field sm" onchange="applyFilters()" id="t-tipo">
+        <option value="">Todos</option><option value="DET">DET</option><option value="MET">MET</option>
+      </select>
+    </div>
+    <div class="glass" style="overflow:hidden">
+      <div style="overflow-x:auto;max-height:72vh;overflow-y:auto">
+        <table id="tabla-completa">
+          <thead><tr>
+            <th>#</th><th>Nombre</th><th>Prog.</th><th>n</th>
+            <th>📊 Avance</th><th>📖 Intro.</th><th>💡 Justif.</th>
+            <th>🎯 Obj.</th><th>🔬 Método</th><th>📈 Análisis</th><th>💬 Discus.</th>
+            <th>M.Gen</th><th>M.Pond</th><th>Conv.</th>
+          </tr></thead>
+          <tbody id="tabla-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMENTARIOS -->
+  <div id="page-comentarios" class="page">
+    <div class="filters">
+      <input class="field" placeholder="🔍 Buscar en comentarios..." oninput="applyFilters()" id="c-search"/>
+      <select class="field sm" onchange="applyFilters()" id="c-prog"></select>
+    </div>
+    <div id="comentarios-list"></div>
+  </div>
+
+  <div style="text-align:center;padding:18px;color:rgba(110,231,183,.25);font-size:.72rem;border-top:1px solid rgba(255,255,255,.05);margin-top:16px">
+    SIP · Sistema de Información de Posgrado · Evaluación Académica 2025 · 39 estudiantes
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════
+//  DATOS
+// ════════════════════════════════════════════
+const DATA=[
+{id:2,rank:1,nombre:"Adrián Cipres Chávez",proyecto:"Conservación y cuidado del territorio: experiencias participativas en el Sistema lagunar costero de Mandinga, Veracruz, México.",programa:"8to. DET",avanceSatisfactorio:4.75,introduccion:4.75,justificacion:4.5,objetivos:4.25,metodo:4.5,analisis:5.0,discusion:3.75,mediaPonderada:4.458,mediaGeneral:4.5,convivencia:9.75,comentarios:"Se aplaude la inclusión de una visión crítica que identifica obstáculos y errores, reconociendo la complejidad de la realidad."},
+{id:35,rank:2,nombre:"Paola Andrea Velásquez Noriega",proyecto:"Estado de conservación, distribución e interacciones con fauna de las especies del género Puya (Bromeliaceae) en el Neotrópico.",programa:"6to. DET",avanceSatisfactorio:5.0,introduccion:4.5,justificacion:4.5,objetivos:4.5,metodo:4.5,analisis:5.0,discusion:2.5,mediaPonderada:4.25,mediaGeneral:4.357,convivencia:10.0,comentarios:""},
+{id:16,rank:3,nombre:"Esteban Francisco Ventura",proyecto:"El bosque urbano en Xalapa, Veracruz: Diversidad vegetal, servicios ecosistémicos y factores que afectan su cobertura.",programa:"6to. DET",avanceSatisfactorio:4.333,introduccion:4.333,justificacion:4.333,objetivos:4.333,metodo:4.667,analisis:4.0,discusion:3.667,mediaPonderada:4.222,mediaGeneral:4.238,convivencia:9.857,comentarios:"Se sugiere ampliar el análisis de servicios ambientales (protección de laderas, infiltración) para un enfoque más integrador e incluir un análisis interpretativo de las entrevistas a actores sociales. Se debe explicar la aportación del trabajo frente a otros publicados."},
+{id:38,rank:4,nombre:"Tania Marisol Susan Tepetlan",proyecto:"Diversidad genética y funcional de tres especies arbóreas con importancia biocultural en paisajes fragmentados.",programa:"4to. DET",avanceSatisfactorio:4.5,introduccion:4.5,justificacion:4.5,objetivos:4.5,metodo:4.5,analisis:4.5,discusion:2.5,mediaPonderada:4.167,mediaGeneral:4.214,convivencia:10.0,comentarios:"Se sugiere defender más el uso de Inteligencia Artificial para el análisis de palabras, agregar métodos de validación en la clasificación de coberturas y realizar un análisis histórico de cobertura arbórea."},
+{id:14,rank:5,nombre:"Elizabeth Fuentes Romero",proyecto:"Almacén y regulación de carbono en el bosque mesófilo de montaña en la Sierra Gorda de Querétaro.",programa:"8to. DET",avanceSatisfactorio:4.5,introduccion:4.0,justificacion:4.0,objetivos:4.0,metodo:4.0,analisis:4.333,discusion:4.0,mediaPonderada:4.056,mediaGeneral:4.119,convivencia:9.2,comentarios:"Se debe indicar la propiedad de los bosques y el historial de manejo, poner títulos a tablas y figuras, y ocupar menos texto en las diapositivas."},
+{id:20,rank:6,nombre:"Hector David Jimeno Sevilla",proyecto:"Los insectos comestibles de la Sierra de Zongolica, Ver., su diversidad y manejo como parte de los sistemas agroforestales regionales.",programa:"8to. DET",avanceSatisfactorio:4.2,introduccion:4.0,justificacion:4.0,objetivos:4.2,metodo:4.2,analisis:4.0,discusion:4.0,mediaPonderada:4.067,mediaGeneral:4.086,convivencia:9.8,comentarios:"Se sugiere indicar con claridad las publicaciones generadas y cuidar el tiempo de presentación."},
+{id:32,rank:7,nombre:"Manuel de Jesús Cameras Flores",proyecto:"Interacciones entre aves y plantas epífitas en dos diferentes tipos de vegetación en la región de Los Tuxtlas, Veracruz, México.",programa:"2do. DET",avanceSatisfactorio:4.0,introduccion:4.0,justificacion:4.0,objetivos:4.0,metodo:4.0,analisis:0.0,discusion:0.0,mediaPonderada:2.667,mediaGeneral:4.0,convivencia:9.0,comentarios:""},
+{id:25,rank:8,nombre:"José Rodrigo Carral Dominguez",proyecto:"Productividad y manejo de Cantharellus veraecrucis y C.violaceovinosus en cafetal de bajo sombra y sistemas silvopastoriles con encinos en Zentla, Veracruz.",programa:"3ro. MET",avanceSatisfactorio:4.4,introduccion:4.4,justificacion:4.2,objetivos:4.2,metodo:4.6,analisis:4.2,discusion:1.8,mediaPonderada:3.9,mediaGeneral:3.971,convivencia:10.0,comentarios:"Se sugiere revisar si es necesario realizar tantos modelos estadísticos o si uno más simple daría robustez. También se pide revisar los antecedentes del suelo y las preguntas de investigación."},
+{id:33,rank:9,nombre:"María José Graniel Izquierdo",proyecto:"Efectos de los sistemas de cultivo de vainilla (Vanilla planifolia Jacks) sobre la diversidad microbiana del suelo en el Totonacapan veracruzano.",programa:"3ro. MET",avanceSatisfactorio:4.25,introduccion:4.25,justificacion:4.25,objetivos:4.25,metodo:4.25,analisis:4.0,discusion:2.25,mediaPonderada:3.875,mediaGeneral:3.929,convivencia:9.8,comentarios:"Es preocupante la falta de datos de dos sistemas a comparar; se debe aclarar la separación de sitios y tratamientos, y explicar mejor el tiempo de permanencia de glifosato/paraquat en el suelo."},
+{id:39,rank:10,nombre:"Teresa Ruiz Olvera",proyecto:"Redes de interacción planta-visitadores florales en el paisaje biocultural del Totonacapan.",programa:"4to. DET",avanceSatisfactorio:4.5,introduccion:4.0,justificacion:4.167,objetivos:4.167,metodo:4.167,analisis:4.0,discusion:2.0,mediaPonderada:3.75,mediaGeneral:3.857,convivencia:9.0,comentarios:"Se pide mayor rigor estadístico y se advierte que la inclusión del paisaje biocultural añade complejidad que debe manejarse con cuidado en el análisis y discusión."},
+{id:36,rank:11,nombre:"Rafael Vega Gassos",proyecto:"Efecto de la antropización sobre la diversidad de epífitas vasculares y su preferencia de hospedero en encinar tropical y vegetación derivada en el centro de Veracruz.",programa:"3ro. MET",avanceSatisfactorio:4.375,introduccion:4.375,justificacion:3.286,objetivos:4.625,metodo:4.25,analisis:4.125,discusion:1.75,mediaPonderada:3.735,mediaGeneral:3.827,convivencia:9.625,comentarios:"Se debe aclarar el método de muestreo y hacer explícita la aportación del estudio. Se sugiere mejorar el orden de los resultados, ampliar su discusión y alzar el nivel de voz al presentar."},
+{id:23,rank:12,nombre:"Jhonny Daniel Duarte Lefosse",proyecto:"Impacto del daño foliar en atributos del desempeño en tres especies del género Vanilla.",programa:"4to. MET",avanceSatisfactorio:3.5,introduccion:4.25,justificacion:4.0,objetivos:4.25,metodo:4.0,analisis:3.5,discusion:3.0,mediaPonderada:3.833,mediaGeneral:3.786,convivencia:9.8,comentarios:"Se debe explicar el número de individuos medidos y usar análisis de varianza (ANOVA) en lugar de gráficas de líneas para mostrar variabilidad y efectos."},
+{id:17,rank:13,nombre:"Gabriel Castro Masegosa",proyecto:"El sistema biocultural chile criollo o tres lomos (Capsicum annuum var. annuum) en una microregión del centro de Veracruz.",programa:"6to. DET",avanceSatisfactorio:4.0,introduccion:4.2,justificacion:3.4,objetivos:4.2,metodo:4.2,analisis:3.0,discusion:3.4,mediaPonderada:3.733,mediaGeneral:3.771,convivencia:9.6,comentarios:"Se recomienda elaborar un esquema síntesis de los elementos bioculturales y sistematizar la información dispersa. Es importante entrelazar el posicionamiento ético-político con la metodología."},
+{id:3,rank:14,nombre:"Alan Monroy Ojeda",proyecto:"Estado de conservación y análisis espacial para la reintroducción del Águila Harpía (Harpia harpyja) y análisis de la ecología de movimiento del Zopilote Rey (Sarcoramphus papa).",programa:"4to. DET",avanceSatisfactorio:4.5,introduccion:4.6,justificacion:3.8,objetivos:4.6,metodo:4.5,analisis:3.5,discusion:0.889,mediaPonderada:3.648,mediaGeneral:3.77,convivencia:9.714,comentarios:"Se recomienda incluir los enfoques de conservación en el marco teórico y desarrollar el posicionamiento ético-político y lugar de enunciación. Se sugiere realizar encuestas con actores locales sobre procesos históricos."},
+{id:28,rank:15,nombre:"Laura Emmanuelle Jarri",proyecto:"Redes Alimentarias Alternativas como comunidades de cuidado de los territorios en la región de Xalapa, Veracruz.",programa:"6to. DET",avanceSatisfactorio:3.667,introduccion:3.667,justificacion:3.333,objetivos:4.0,metodo:4.0,analisis:3.667,discusion:4.0,mediaPonderada:3.778,mediaGeneral:3.762,convivencia:9.333,comentarios:"Se sugiere presentar toda la historia de la investigación para no diluir el objeto de estudio. Se debe enfatizar el lugar de enunciación y reflexionar críticamente sobre las vulnerabilidades."},
+{id:18,rank:16,nombre:"Gabriela Galindo González",proyecto:"Efecto de factores antropogénicos sobre la distribución geográfica de murciélagos cavernícolas en el sureste de México.",programa:"6to. DET",avanceSatisfactorio:3.75,introduccion:3.75,justificacion:3.75,objetivos:4.0,metodo:4.0,analisis:4.0,discusion:3.0,mediaPonderada:3.75,mediaGeneral:3.75,convivencia:9.75,comentarios:"Se recomienda explicar la aportación del trabajo y manejar la información desagregada en varias diapositivas para evitar la saturación."},
+{id:12,rank:17,nombre:"David Sinué Luna Pérez",proyecto:"Adaptación y resiliencia de agroecosistemas en zonas periurbanas de Xalapa.",programa:"6to. DET",avanceSatisfactorio:4.0,introduccion:3.6,justificacion:3.6,objetivos:3.8,metodo:4.2,analisis:3.0,discusion:0.0,mediaPonderada:3.033,mediaGeneral:3.7,convivencia:9.8,comentarios:"Se debe explicar por qué se hizo análisis de suelo y definir términos académicos nuevos. Se sugiere elaborar materiales didácticos sobre el suelo como ecosistema."},
+{id:34,rank:18,nombre:"Olivia Reyna Sánchez",proyecto:"Análisis metabolómico de tres especies del género Vanilla y su actividad antiproliferativa en células cancerosas de próstata y mama.",programa:"8to. DET",avanceSatisfactorio:3.8,introduccion:4.2,justificacion:3.8,objetivos:3.8,metodo:3.8,analisis:3.2,discusion:2.75,mediaPonderada:3.592,mediaGeneral:3.621,convivencia:9.6,comentarios:"Se requiere mejorar el análisis estadístico (comparar promedios, explicar PCA) y revisar la interpretación de los mapas de color."},
+{id:22,rank:19,nombre:"Jaime Francisco Camelo Vidal",proyecto:"Impacto antropogénico y su efecto en la configuración y recuperación del bosque de manglar en el Sistema Lagunar de Alvarado.",programa:"2do. DET",avanceSatisfactorio:3.875,introduccion:4.375,justificacion:4.125,objetivos:4.125,metodo:3.857,analisis:2.875,discusion:1.625,mediaPonderada:3.497,mediaGeneral:3.551,convivencia:9.625,comentarios:"Se sugiere utilizar una metodología estandarizada para medir daños en hojas. Se recomienda elaborar mapas de México mostrando tipos de disturbios y restauración."},
+{id:11,rank:20,nombre:"David Chacón Castillo",proyecto:"Milpa de roza, tumba y quema en la Península de Yucatán: estado de conservación y dinámica en los patrones de biomasa en el paisaje.",programa:"6to. DET",avanceSatisfactorio:4.0,introduccion:4.0,justificacion:4.0,objetivos:4.0,metodo:4.0,analisis:3.5,discusion:1.333,mediaPonderada:3.472,mediaGeneral:3.548,convivencia:9.333,comentarios:"Se recomienda identificar si los árboles medidos son rebrotes y definir elementos para determinar degradación forestal."},
+{id:9,rank:21,nombre:"Daniela Del Ángel Hernández",proyecto:"Patrones fenológicos y niveles de herbivoria en Zamia loddigessi Miq. (Zamiaceae).",programa:"1ro. MET",avanceSatisfactorio:1.667,introduccion:4.833,justificacion:3.833,objetivos:4.5,metodo:4.667,analisis:1.333,discusion:0.0,mediaPonderada:3.194,mediaGeneral:3.472,convivencia:10.0,comentarios:"Se aconseja ser más breve en la introducción para explicar mejor la metodología."},
+{id:21,rank:22,nombre:"Isis Io Ortiz Vela",proyecto:"Factores ambientales que afectan la germinación y establecimiento de plántulas de árboles del bosque de Fagus grandifolia subsp. mexicana.",programa:"4to. DET",avanceSatisfactorio:3.75,introduccion:3.5,justificacion:4.0,objetivos:4.0,metodo:3.75,analisis:3.75,discusion:1.333,mediaPonderada:3.389,mediaGeneral:3.44,convivencia:9.5,comentarios:"Se recomienda mejorar la comunicación visual (escalas en semillas, títulos visibles en gráficas) y reducir la cantidad de texto en las diapositivas."},
+{id:19,rank:23,nombre:"Guadalupe Torres Martínez",proyecto:"Influencia de la gobernanza sobre el manejo y conservación de Dasylirion acrptrichum (Asparagaceae), especie utilizada en fiestas patronales de Veracruz.",programa:"6to. DET",avanceSatisfactorio:3.75,introduccion:4.25,justificacion:4.25,objetivos:4.0,metodo:3.75,analisis:2.5,discusion:1.25,mediaPonderada:3.333,mediaGeneral:3.393,convivencia:10.0,comentarios:"Se debe aclarar el método de análisis de datos y documentar las reglas locales tanto de los dueños como de quienes colectan."},
+{id:31,rank:24,nombre:"Luisa Margarita Rodríguez Flores",proyecto:"Ecología de la reproducción de Vanilla insignis Ames (Orchidaceae)",programa:"2do. DET",avanceSatisfactorio:3.714,introduccion:4.286,justificacion:4.143,objetivos:4.0,metodo:4.143,analisis:2.286,discusion:1.143,mediaPonderada:3.333,mediaGeneral:3.388,convivencia:6.143,comentarios:"Se recomienda explicar el método para observar la dispersión de frutos y realizar tratamientos de polinización para determinar el sistema reproductivo."},
+{id:4,rank:25,nombre:"Alfonso Blanco Callejas",proyecto:"Las cercas vivas como reservorio de biodiversidad vegetal: determinantes locales y paisajísticos en ambientes tropicales fragmentados.",programa:"2do. DET",avanceSatisfactorio:2.286,introduccion:4.0,justificacion:4.0,objetivos:4.0,metodo:4.0,analisis:1.857,discusion:0.0,mediaPonderada:2.976,mediaGeneral:3.357,convivencia:9.857,comentarios:"Se recomienda mencionar el método de validación para la clasificación supervisada y revisar metodologías de teledetección para monitoreo de insectos y vegetación."},
+{id:26,rank:26,nombre:"Julio Cesar Pérez Hernández",proyecto:"Abundancia y distribución de hongos comestibles de recolección tradicional en el Parque Nacional Cofre de Perote.",programa:"2do. DET",avanceSatisfactorio:3.0,introduccion:3.667,justificacion:3.5,objetivos:3.833,metodo:3.6,analisis:1.8,discusion:0.0,mediaPonderada:2.733,mediaGeneral:3.233,convivencia:9.833,comentarios:"Se sugiere no saturar las diapositivas de texto y revisar la factibilidad de los métodos."},
+{id:37,rank:27,nombre:"Rubí Marisol Franco José",proyecto:"Mujeres, abejas y comunidad: prácticas y saberes sobre apicultura y meliponicultura en los municipios de Emiliano Zapata, Xalapa y Xico, Veracruz.",programa:"2do. MET",avanceSatisfactorio:3.286,introduccion:4.0,justificacion:4.143,objetivos:4.0,metodo:4.0,analisis:1.714,discusion:1.143,mediaPonderada:3.167,mediaGeneral:3.184,convivencia:9.571,comentarios:"Es necesario presentar datos concretos sobre el número de entrevistas y profundizar en los fundamentos teóricos de la Investigación Acción Participativa (IAP)."},
+{id:24,rank:28,nombre:"José Manuel Rodríguez Málaga",proyecto:"Evaluación de la germinación simbiótica de Vanilla pompona Schiede (Orchidaceae) a partir de hongos micorrizicos.",programa:"1ro. MET",avanceSatisfactorio:2.25,introduccion:4.25,justificacion:4.0,objetivos:4.25,metodo:4.167,analisis:2.25,discusion:0.75,mediaPonderada:3.278,mediaGeneral:3.131,convivencia:9.692,comentarios:"Se sugiere ser menos detallado en la descripción textual de los métodos y utilizar un diagrama para explicar el diseño experimental de forma más sencilla."},
+{id:13,rank:29,nombre:"Diana Elena Gómez Reyna",proyecto:"Conservación del patrimonio biocultural olmeca a través del enfoque de la ecología del paisaje",programa:"2do. DET",avanceSatisfactorio:2.429,introduccion:3.625,justificacion:3.875,objetivos:3.875,metodo:3.571,analisis:1.25,discusion:0.0,mediaPonderada:2.699,mediaGeneral:3.104,convivencia:9.625,comentarios:"Se sugiere incorporar la ecología cultural e histórica a los métodos de ecología del paisaje y explicar cómo la información beneficiará a las poblaciones locales."},
+{id:30,rank:30,nombre:"Lucio Pérez Pérez",proyecto:"Influencia de factores locales y del paisaje en el uso de árboles por murciélagos fitófagos en una ciudad tropical.",programa:"1ro. MET",avanceSatisfactorio:1.0,introduccion:4.375,justificacion:4.0,objetivos:4.25,metodo:3.875,analisis:1.0,discusion:0.0,mediaPonderada:2.917,mediaGeneral:3.083,convivencia:9.556,comentarios:"Se sugiere discriminar la influencia de la selección de sitios en los resultados y reformular la justificación."},
+{id:10,rank:31,nombre:"Daniela Guadalupe Rios Elosegui",proyecto:"Conocimiento ecológico local acerca del impacto antrópico sobre las pesquerías del Golfo de México.",programa:"4to. DET",avanceSatisfactorio:3.25,introduccion:3.5,justificacion:2.75,objetivos:3.75,metodo:3.5,analisis:3.5,discusion:1.25,mediaPonderada:3.042,mediaGeneral:3.071,convivencia:9.25,comentarios:"Se recomienda anclar los avances con el Conocimiento Ecológico Tradicional e incorporar el enfoque de los comunes (escuela de Ostrom)."},
+{id:29,rank:32,nombre:"Lizbeth Márquez Pérez",proyecto:"Acción colectiva para la transformación socioecológica del territorio en Xalapa Veracruz.",programa:"2do. DET",avanceSatisfactorio:1.0,introduccion:4.0,justificacion:3.667,objetivos:3.667,metodo:3.0,analisis:0.0,discusion:0.0,mediaPonderada:2.389,mediaGeneral:3.067,convivencia:9.667,comentarios:"Se debe equilibrar la presentación reduciendo el marco contextual para ser más puntual en objetivos y métodos."},
+{id:1,rank:33,nombre:"Abner Yeudiel Nájera Santes",proyecto:"Identificación de metabolitos secundarios en tres especies de orquídeas propagadas in vitro.",programa:"1ro. MET",avanceSatisfactorio:1.778,introduccion:3.778,justificacion:3.778,objetivos:4.0,metodo:4.0,analisis:0.625,discusion:0.0,mediaPonderada:2.697,mediaGeneral:2.993,convivencia:9.727,comentarios:"Se sugiere ensayar la presentación para mejorar la fluidez y usar notas de apoyo."},
+{id:8,rank:34,nombre:"Cristyan Moreno Guevara",proyecto:"Conocimiento morfológico, ecológico, uso y manejo del Chile piquín (Capsicum annuum var. glabriusculum) en el municipio de Yecuatla, Veracruz.",programa:"1ro. MET",avanceSatisfactorio:1.545,introduccion:3.909,justificacion:3.909,objetivos:3.909,metodo:3.818,analisis:0.818,discusion:0.0,mediaPonderada:2.727,mediaGeneral:2.985,convivencia:9.5,comentarios:"Se debe describir con mayor precisión las características biológicas de la especie y diferenciar conceptualmente entre nicho ecológico e idoneidad ambiental."},
+{id:27,rank:35,nombre:"Karla María Alba Robles",proyecto:"Educación ambiental con estudiantes de preescolar sobre el coyote (Canis latrans) en Perote, Veracruz.",programa:"1ro. MET",avanceSatisfactorio:1.182,introduccion:3.909,justificacion:3.909,objetivos:3.818,metodo:3.727,analisis:0.818,discusion:0.0,mediaPonderada:2.697,mediaGeneral:2.894,convivencia:9.538,comentarios:"Se recomienda generar material audiovisual derivado del proyecto y especificar herramientas para evaluar habilidades creativas."},
+{id:6,rank:36,nombre:"Andrea Cortes Ortega",proyecto:"Territorio Hidrosocial y urbanización: Análisis de las transformaciones y conflictos en comunidades rurales de Emiliano Zapata.",programa:"3ro. MET",avanceSatisfactorio:3.667,introduccion:3.333,justificacion:3.222,objetivos:3.667,metodo:3.556,analisis:1.667,discusion:1.0,mediaPonderada:2.741,mediaGeneral:2.873,convivencia:9.0,comentarios:"Se sugiere realizar un mapeo de actores sobre la gobernanza del agua e incorporar el análisis de territorio hidrosocial."},
+{id:5,rank:37,nombre:"Alma Delia Olivares Martínez",proyecto:"Evaluación y afinación de modelos de nicho de polinizadores en paisajes cafetaleras en el Centro del Estado de Veracruz.",programa:"1ro. MET",avanceSatisfactorio:1.571,introduccion:3.786,justificacion:3.643,objetivos:3.571,metodo:3.5,analisis:0.786,discusion:0.0,mediaPonderada:2.548,mediaGeneral:2.81,convivencia:9.467,comentarios:"Se recomienda presentar la parte experimental de forma más ordenada y considerar que las abejas no son los únicos polinizadores."},
+{id:7,rank:38,nombre:"Arantxa Huerta Toral",proyecto:"Dinámica de la Deforestación en el Municipio de Actopan, Veracruz (2014-2025): causas subyacentes vinculadas a la expansión ganadera.",programa:"1ro. MET",avanceSatisfactorio:1.6,introduccion:4.083,justificacion:3.583,objetivos:3.833,metodo:3.909,analisis:1.0,discusion:0.583,mediaPonderada:2.832,mediaGeneral:2.656,convivencia:9.5,comentarios:"Se sugiere citar las fuentes de la metodología y precisar las variables de los factores subyacentes en la hipótesis."},
+{id:15,rank:39,nombre:"Esmeralda de los Ángeles Zamora Saldaña",proyecto:"Apropiación de proyectos de carbono forestal: una guía comunitaria de cuantificación de CO2.",programa:"1ro. MET",avanceSatisfactorio:1.333,introduccion:4.083,justificacion:3.833,objetivos:3.583,metodo:3.5,analisis:1.167,discusion:0.5,mediaPonderada:2.778,mediaGeneral:2.571,convivencia:9.643,comentarios:"Debe mejorar el diseño visual de las diapositivas y resumir la introducción para enfocar el tiempo en la metodología. Se sugiere no mezclar herramientas metodológicas con los objetivos."}
+];
+
+const SECS=[
+  {key:"avanceSatisfactorio",label:"Avance",icon:"📊"},
+  {key:"introduccion",label:"Introducción",icon:"📖"},
+  {key:"justificacion",label:"Justificación",icon:"💡"},
+  {key:"objetivos",label:"Objetivos",icon:"🎯"},
+  {key:"metodo",label:"Método",icon:"🔬"},
+  {key:"analisis",label:"Análisis",icon:"📈"},
+  {key:"discusion",label:"Discusión",icon:"💬"}
+];
+
+// N de evaluadores por estudiante (273 opiniones totales)
+const N_EVALUADORES = [4,3,3,4,3,5,5,5,7,5,7,7,7,5,7,6,5,5,5,5,5,7,8,6,8,6,8,8,8,8,12,10,12,11,9,10,12,11,11];
+
+// ════════════════════════════════════════════
+//  UTILS
+// ════════════════════════════════════════════
+const f=(v,d=2)=>(v!=null&&!isNaN(v))?Number(v).toFixed(d):"—";
+const gc=v=>{if(!v&&v!==0)return"#6b7280";if(v>=4)return"#10b981";if(v>=3)return"#f59e0b";return"#ef4444";};
+const getPT=p=>p&&p.includes("DET")?"DET":"MET";
+const getPC=p=>getPT(p)==="DET"?"#10b981":"#6366f1";
+const pad=n=>String(n).padStart(3,"0");
+const esc=s=>String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+const getNEval=id=>{const idx=DATA.findIndex(d=>d.id===id);return idx>=0&&idx<N_EVALUADORES.length?N_EVALUADORES[idx]:0;};
+
+const scoreBadge=v=>{const c=gc(v);return`<span style="display:inline-block;padding:2px 10px;border-radius:12px;background:${c}22;color:${c};font-weight:700;font-size:.8rem;border:1px solid ${c}44;white-space:nowrap">${f(v)}</span>`;};
+
+const pbarHtml=(value,label,icon,compare,showC)=>{
+  const w=value!=null?Math.min(100,(value/5)*100):0;
+  const c=gc(value);
+  const wc=compare!=null?Math.min(100,(compare/5)*100):0;
+  return`<div class="pbar-wrap">
+    <div class="pbar-header"><span>${icon} ${label}</span>
+    <div style="display:flex;gap:8px;align-items:center">${scoreBadge(value)}${showC&&compare!=null?`<span style="color:#94a3b8;font-size:.73rem">grupo: ${f(compare)}</span>`:""}</div></div>
+    <div class="pbar"><div class="pbar-fill" style="width:${w}%;background:linear-gradient(90deg,${c}88,${c})"></div></div>
+    ${showC&&compare!=null?`<div class="pbar2"><div class="pbar2-fill" style="width:${wc}%"></div></div>`:""}
+  </div>`;
+};
+
+// ════════════════════════════════════════════
+//  ESTADÍSTICAS GLOBALES
+// ════════════════════════════════════════════
+const groupAvg={};
+SECS.forEach(s=>{
+  const vs=DATA.filter(d=>d[s.key]!=null).map(d=>d[s.key]);
+  groupAvg[s.key]=vs.reduce((a,b)=>a+b,0)/vs.length;
+});
+const vd=DATA.filter(d=>d.mediaGeneral!=null);
+groupAvg.mediaGeneral=vd.reduce((a,b)=>a+b.mediaGeneral,0)/vd.length;
+const cv=DATA.filter(d=>d.convivencia!=null);
+groupAvg.convivencia=cv.reduce((a,b)=>a+b.convivencia,0)/cv.length;
+
+// ════════════════════════════════════════════
+//  CHART.JS ACTIVOS
+// ════════════════════════════════════════════
+let chartDist=null,chartProg=null,chartRadar=null,chartBars=null;
+function destroyChart(c){if(c){try{c.destroy();}catch(e){}}return null;}
+
+const chartDefaults={
+  color:"#6ee7b7",
+  borderColor:"rgba(255,255,255,.1)"
+};
+Chart.defaults.color="#6ee7b7";
+
+function buildDistChart(){
+  chartDist=destroyChart(chartDist);
+  const buckets=[0,0,0,0,0];
+  vd.forEach(d=>{buckets[Math.min(4,Math.floor(d.mediaGeneral))]++;});
+  const ctx=document.getElementById("chart-dist");
+  if(!ctx)return;
+  chartDist=new Chart(ctx,{type:"bar",data:{labels:["0–1","1–2","2–3","3–4","4–5"],datasets:[{data:buckets,backgroundColor:["#ef4444","#f97316","#f59e0b","#22c55e","#10b981"],borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.raw} estudiante${ctx.raw!==1?"s":""}`}}},scales:{x:{grid:{color:"rgba(255,255,255,.05)"},ticks:{color:"#6ee7b7"}},y:{grid:{color:"rgba(255,255,255,.05)"},ticks:{color:"#6ee7b7",stepSize:1}}}}});
+}
+
+function buildProgChart(){
+  chartProg=destroyChart(chartProg);
+  const ctx=document.getElementById("chart-prog");
+  if(!ctx)return;
+  const bp=getByProgram();
+  chartProg=new Chart(ctx,{type:"bar",data:{labels:bp.map(p=>p.programa),datasets:[{label:"Media Promedio",data:bp.map(p=>+(p.avgMedia||0).toFixed(2)),backgroundColor:bp.map(p=>getPC(p.programa)+"cc"),borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`Media: ${c.raw}`}}},scales:{x:{grid:{color:"rgba(255,255,255,.05)"},ticks:{color:"#6ee7b7",maxRotation:45}},y:{grid:{color:"rgba(255,255,255,.05)"},ticks:{color:"#6ee7b7"},min:0,max:5}}}});
+}
+
+// ════════════════════════════════════════════
+//  TAB NAVIGATION
+// ════════════════════════════════════════════
+function showTab(name,btn){
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+  document.getElementById("page-"+name).classList.add("active");
+  btn.classList.add("active");
+  resetFilters();
+  if(name==="resumen")setTimeout(buildDistChart,50);
+  if(name==="programa"){buildProgCards();setTimeout(buildProgChart,50);}
+  if(name==="ranking")renderRanking();
+  if(name==="tabla")renderTabla();
+  if(name==="comentarios")renderComentarios();
+}
+
+// ════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════
+function init(){
+  buildKPIs();
+  buildGrupoSecciones();
+  buildDistChart();
+  populateSelects();
+  renderRanking();
+}
+
+function buildKPIs(){
+  const progs=new Set(DATA.map(d=>d.programa).filter(Boolean));
+  const kpis=[
+    {l:"Total Estudiantes",v:DATA.length,i:"👥",c:"#10b981"},
+    {l:"Media Grupal",v:f(groupAvg.mediaGeneral),i:"📊",c:"#6366f1"},
+    {l:"Conv. Promedio",v:f(groupAvg.convivencia,1)+"/10",i:"🤝",c:"#f59e0b"},
+    {l:"Programas",v:progs.size,i:"🏫",c:"#ec4899"},
+    {l:"Mayor Media",v:f(DATA[0].mediaGeneral),i:"🥇",c:"#fbbf24"},
+    {l:"Con Comentarios",v:DATA.filter(d=>d.comentarios).length,i:"💬",c:"#06b6d4"}
+  ];
+  document.getElementById("kpis-globales").innerHTML=kpis.map(k=>`
+    <div class="kpi" style="border-left:3px solid ${k.c}">
+      <div style="font-size:1.45rem;margin-bottom:3px">${k.i}</div>
+      <div style="font-size:1.45rem;font-weight:800;color:${k.c};line-height:1">${k.v}</div>
+      <div style="font-size:.76rem;color:#a7f3d0;margin-top:5px">${k.l}</div>
+    </div>`).join("");
+}
+
+function buildGrupoSecciones(){
+  document.getElementById("grupo-secciones").innerHTML=SECS.map(s=>pbarHtml(groupAvg[s.key],s.label,s.icon,null,false)).join("");
+}
+
+// ════════════════════════════════════════════
+//  BY PROGRAM
+// ════════════════════════════════════════════
+function getByProgram(){
+  const map={};
+  DATA.filter(d=>d.nombre&&d.programa).forEach(d=>{
+    if(!map[d.programa])map[d.programa]={programa:d.programa,count:0,tm:0,nm:0,tc:0,nc:0,students:[]};
+    map[d.programa].count++;
+    map[d.programa].students.push(d);
+    if(d.mediaGeneral!=null){map[d.programa].tm+=d.mediaGeneral;map[d.programa].nm++;}
+    if(d.convivencia!=null){map[d.programa].tc+=d.convivencia;map[d.programa].nc++;}
+  });
+  return Object.values(map).map(p=>({...p,avgMedia:p.nm?p.tm/p.nm:null,avgConv:p.nc?p.tc/p.nc:null})).sort((a,b)=>a.programa.localeCompare(b.programa));
+}
+
+function buildProgCards(){
+  const bp=getByProgram();
+  document.getElementById("prog-cards").innerHTML=bp.map(p=>`
+    <div class="prog-card" style="border-top:3px solid ${getPC(p.programa)}">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span style="font-weight:800;color:#ecfdf5">${esc(p.programa)}</span>
+        <span class="badge" style="background:${getPC(p.programa)}22;color:${getPC(p.programa)}">${getPT(p.programa)}</span>
+      </div>
+      <div class="prog-stats">
+        <div class="prog-stat"><div style="font-weight:800;color:#10b981;font-size:1.05rem">${p.count}</div><div style="font-size:.68rem;color:#6ee7b7">Alumnos</div></div>
+        <div class="prog-stat"><div style="font-weight:800;color:#10b981;font-size:1.05rem">${f(p.avgMedia)}</div><div style="font-size:.68rem;color:#6ee7b7">Media</div></div>
+        <div class="prog-stat"><div style="font-weight:800;color:#10b981;font-size:1.05rem">${f(p.avgConv,1)}</div><div style="font-size:.68rem;color:#6ee7b7">Conv.</div></div>
+      </div>
+      <div class="prog-students">
+        ${p.students.map(s=>`<div class="prog-stu-row" onclick="openDetail(${s.id})"><span style="font-size:.82rem;color:#d1fae5;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:8px">${esc(s.nombre)}</span>${scoreBadge(s.mediaGeneral)}</div>`).join("")}
+      </div>
+    </div>`).join("");
+}
+
+// ════════════════════════════════════════════
+//  FILTERS & SORT
+// ════════════════════════════════════════════
+let sortKey="rank", sortDir=1;
+
+function populateSelects(){
+  const progs=["Todos",...new Set(DATA.map(d=>d.programa).filter(Boolean))].sort();
+  ["f-prog","t-prog","c-prog"].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.innerHTML=progs.map(p=>`<option value="${p==="Todos"?"":p}">${p}</option>`).join("");
+  });
+}
+
+function resetFilters(){
+  ["f-search","t-search","c-search"].forEach(id=>{const e=document.getElementById(id);if(e)e.value="";});
+  ["f-prog","t-prog","c-prog","f-tipo","t-tipo"].forEach(id=>{const e=document.getElementById(id);if(e)e.value="";});
+}
+
+function getFiltered(searchId,progId,tipoId){
+  const s=(document.getElementById(searchId)||{}).value||"";
+  const p=(document.getElementById(progId)||{}).value||"";
+  const t=(document.getElementById(tipoId)||{}).value||"";
+  let d=DATA.filter(x=>x.nombre);
+  if(s)d=d.filter(x=>x.nombre.toLowerCase().includes(s.toLowerCase())||(x.proyecto||"").toLowerCase().includes(s.toLowerCase())||(x.comentarios||"").toLowerCase().includes(s.toLowerCase()));
+  if(p)d=d.filter(x=>x.programa===p);
+  if(t)d=d.filter(x=>getPT(x.programa)===t);
+  return [...d].sort((a,b)=>{const av=a[sortKey]??-1,bv=b[sortKey]??-1;return sortDir*(typeof av==="string"?av.localeCompare(bv):av-bv);});
+}
+
+function applyFilters(){renderRanking();renderTabla();renderComentarios();}
+
+function sortBy(key){
+  if(sortKey===key)sortDir*=-1;else{sortKey=key;sortDir=1;}
+  renderRanking();
+}
+
+// ════════════════════════════════════════════
+//  RENDER TABLES
+// ════════════════════════════════════════════
+function renderRanking(){
+  const rows=getFiltered("f-search","f-prog","f-tipo");
+  document.getElementById("ranking-body").innerHTML=rows.map(s=>`
+    <tr class="row-click" onclick="openDetail(${s.id})">
+      <td><span style="font-weight:800;color:#fbbf24;font-family:monospace">${pad(s.rank)}</span></td>
+      <td>
+        <div style="font-weight:600;color:#ecfdf5;white-space:nowrap">${esc(s.nombre)}</div>
+        <div style="font-size:.71rem;color:#6ee7b7;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc((s.proyecto||"").slice(0,65))}…</div>
+      </td>
+      <td><span class="badge" style="background:${getPC(s.programa)}22;color:${getPC(s.programa)}">${esc(s.programa)}</span></td>
+      <td style="color:#94a3b8;font-weight:600;font-family:monospace;white-space:nowrap">${getNEval(s.id)}</td>
+      <td>${scoreBadge(s.mediaGeneral)}</td>
+      <td style="color:#6366f1;font-weight:600">${f(s.mediaPonderada)}</td>
+      <td style="color:#a7f3d0">${f(s.convivencia,1)}</td>
+      <td><button class="btn" style="font-size:.73rem;padding:3px 9px" onclick="event.stopPropagation();openDetail(${s.id})">Ver →</button></td>
+    </tr>`).join("");
+  document.getElementById("ranking-count").textContent=`Mostrando ${rows.length} de ${DATA.length} estudiantes`;
+}
+
+function renderTabla(){
+  const rows=getFiltered("t-search","t-prog","t-tipo");
+  document.getElementById("tabla-body").innerHTML=rows.map(s=>`
+    <tr class="row-click" onclick="openDetail(${s.id})">
+      <td style="font-weight:800;color:#fbbf24;font-family:monospace;white-space:nowrap">${pad(s.rank)}</td>
+      <td style="font-weight:600;color:#ecfdf5;min-width:150px;white-space:nowrap">${esc(s.nombre)}</td>
+      <td><span class="badge" style="background:${getPC(s.programa)}22;color:${getPC(s.programa)};font-size:.7rem">${esc(s.programa)}</span></td>
+      <td style="color:#94a3b8;font-weight:600;font-family:monospace;white-space:nowrap">${getNEval(s.id)}</td>
+      ${SECS.map(sec=>`<td style="color:${gc(s[sec.key])};font-weight:600;white-space:nowrap">${f(s[sec.key])}</td>`).join("")}
+      <td style="color:${gc(s.mediaGeneral)};font-weight:800;white-space:nowrap">${f(s.mediaGeneral)}</td>
+      <td style="color:#6366f1;font-weight:600;white-space:nowrap">${f(s.mediaPonderada)}</td>
+      <td style="color:#f59e0b;font-weight:600;white-space:nowrap">${f(s.convivencia,1)}</td>
+    </tr>`).join("");
+}
+
+function renderComentarios(){
+  const rows=getFiltered("c-search","c-prog","").filter(s=>s.comentarios);
+  document.getElementById("comentarios-list").innerHTML=!rows.length
+    ?'<div class="glass" style="padding:28px;text-align:center;color:#6ee7b7">Sin resultados para los filtros actuales.</div>'
+    :rows.map(s=>`
+    <div class="glass comment-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
+          <span style="font-weight:700;color:#ecfdf5">${esc(s.nombre)}</span>
+          <span class="badge" style="background:${getPC(s.programa)}22;color:${getPC(s.programa)}">${esc(s.programa)}</span>
+          <span style="color:#fbbf24;font-family:monospace;font-size:.78rem;font-weight:700">#${pad(s.rank)}</span>
+        </div>
+        <div style="display:flex;gap:7px;align-items:center">${scoreBadge(s.mediaGeneral)}<button class="btn" style="font-size:.71rem;padding:3px 8px" onclick="openDetail(${s.id})">Ver →</button></div>
+      </div>
+      <p style="color:#fef3c7;font-size:.87rem;line-height:1.78">${esc(s.comentarios)}</p>
+    </div>`).join("");
+}
+
+// ════════════════════════════════════════════
+//  DETALLE
+// ════════════════════════════════════════════
+function openDetail(id){
+  const s=DATA.find(d=>d.id===id);
+  if(!s)return;
+  const vAll=DATA.filter(d=>d.mediaGeneral!=null);
+  const percentil=Math.round(vAll.filter(d=>d.mediaGeneral<=s.mediaGeneral).length/vAll.length*100);
+
+  document.getElementById("d-nombre").textContent=s.nombre;
+  document.getElementById("d-sub").textContent=`${s.programa} · Ranking #${s.rank} · Percentil ${percentil}°`;
+  document.getElementById("d-proyecto").textContent=s.proyecto||"";
+
+  const kpis=[
+    {l:"Ranking",v:"#"+s.rank,c:"#fbbf24"},
+    {l:"Programa",v:s.programa,c:getPC(s.programa)},
+    {l:"n Evaluadores",v:getNEval(s.id),c:"#94a3b8"},
+    {l:"Media General",v:f(s.mediaGeneral),c:"#10b981"},
+    {l:"Media Ponderada",v:f(s.mediaPonderada),c:"#6366f1"},
+    {l:"Convivencia",v:f(s.convivencia,1)+"/10",c:"#f59e0b"},
+    {l:"Percentil",v:percentil+"°",c:"#06b6d4"}
+  ];
+  document.getElementById("d-kpis").innerHTML=kpis.map(k=>`
+    <div class="kpi" style="border-left:3px solid ${k.c}">
+      <div style="font-size:1.15rem;font-weight:800;color:${k.c};line-height:1.1">${k.v}</div>
+      <div style="font-size:.73rem;color:#a7f3d0;margin-top:4px">${k.l}</div>
+    </div>`).join("");
+
+  document.getElementById("d-secciones").innerHTML=SECS.map(sec=>pbarHtml(s[sec.key],sec.label,sec.icon,groupAvg[sec.key],true)).join("");
+
+  document.getElementById("d-comentarios").innerHTML=s.comentarios
+    ?`<div class="glass" style="padding:18px;border-left:4px solid #f59e0b"><div style="color:#fbbf24;font-weight:700;margin-bottom:9px">💬 Comentarios del Comité Evaluador</div><p style="color:#fef3c7;line-height:1.78;font-size:.89rem">${esc(s.comentarios)}</p></div>`
+    :`<div class="glass" style="padding:18px;text-align:center;color:#6ee7b7">Sin comentarios registrados.</div>`;
+
+  // Charts
+  chartRadar=destroyChart(chartRadar);
+  chartBars=destroyChart(chartBars);
+
+  setTimeout(()=>{
+    const rCtx=document.getElementById("chart-radar");
+    if(rCtx){
+      chartRadar=new Chart(rCtx,{type:"radar",data:{labels:SECS.map(s=>s.label),datasets:[
+        {label:"Estudiante",data:SECS.map(sec=>+(s[sec.key]||0).toFixed(2)),backgroundColor:"rgba(16,185,129,.3)",borderColor:"#10b981",pointBackgroundColor:"#10b981"},
+        {label:"Grupo",data:SECS.map(sec=>+groupAvg[sec.key].toFixed(2)),backgroundColor:"rgba(99,102,241,.15)",borderColor:"#6366f1",pointBackgroundColor:"#6366f1"}
+      ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:"#a7f3d0",font:{size:11}}}},scales:{r:{min:0,max:5,ticks:{color:"#6ee7b7",stepSize:1,backdropColor:"transparent"},grid:{color:"rgba(255,255,255,.1)"},pointLabels:{color:"#6ee7b7",font:{size:10}}}}}});
+    }
+    const bCtx=document.getElementById("chart-bars");
+    if(bCtx){
+      chartBars=new Chart(bCtx,{type:"bar",data:{labels:SECS.map(s=>s.label.slice(0,5)+"."),datasets:[
+        {label:"Estudiante",data:SECS.map(sec=>+(s[sec.key]||0).toFixed(2)),backgroundColor:"rgba(16,185,129,.8)",borderRadius:4},
+        {label:"Grupo",data:SECS.map(sec=>+groupAvg[sec.key].toFixed(2)),backgroundColor:"rgba(99,102,241,.6)",borderRadius:4}
+      ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:"#a7f3d0",font:{size:10}}}},scales:{x:{ticks:{color:"#6ee7b7",font:{size:9}},grid:{color:"rgba(255,255,255,.05)"}},y:{min:0,max:5,ticks:{color:"#6ee7b7"},grid:{color:"rgba(255,255,255,.05)"}}}}});
+    }
+  },80);
+
+  document.getElementById("detail-view").classList.add("show");
+  document.getElementById("main-view").style.display="none";
+  window.scrollTo(0,0);
+}
+
+function closeDetail(){
+  chartRadar=destroyChart(chartRadar);
+  chartBars=destroyChart(chartBars);
+  document.getElementById("detail-view").classList.remove("show");
+  document.getElementById("main-view").style.display="";
+}
+
+// ════════════════════════════════════════════
+//  EXPORT CSV
+// ════════════════════════════════════════════
+function exportCSV(){
+  const h="Rank,Nombre,Programa,Tipo,n,Media General,Media Ponderada,Avance,Intro,Justif.,Obj.,Método,Análisis,Discusión,Convivencia";
+  const rows=DATA.map(d=>`${d.rank},"${(d.nombre||"").replace(/"/g,'""')}","${(d.programa||"").replace(/"/g,'""')}",${getPT(d.programa||"")},${getNEval(d.id)},${d.mediaGeneral??""},${d.mediaPonderada??""},${d.avanceSatisfactorio??""},${d.introduccion??""},${d.justificacion??""},${d.objetivos??""},${d.metodo??""},${d.analisis??""},${d.discusion??""},${d.convivencia??""}`);
+  const blob=new Blob(["\uFEFF"+[h,...rows].join("\n")],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="evaluacion_SIP_2025.csv";a.click();URL.revokeObjectURL(a.href);
+}
+
+// ════════════════════════════════════════════
+//  ARRANQUE
+// ════════════════════════════════════════════
+document.addEventListener("DOMContentLoaded",init);
+</script>
+</body>
+</html>
